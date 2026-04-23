@@ -3,21 +3,26 @@ from django.contrib.auth.models import AbstractUser
 from multiselectfield import MultiSelectField
 
 class Role(models.Model):
-    role_type = models.CharField(max_length=15)
-
+    role_choices = {
+        "Mentor" : "mentor",
+        "Student" : "student",
+    }
+    role_type = models.CharField(choices=role_choices ,max_length=15)
+    
     def __str__(self):
         return self.role_type
     
 class User(AbstractUser):
     role = models.ManyToManyField(Role, through='UserRole')
-
+    email = models.EmailField(unique=True)
+    REQUIRED_FIELDS = ['email']
     def __str__(self):
         return self.username
 
 class UserRole(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
-
+ 
     def __str__(self):
         return f"{self.user} -> {self.role}"
 
