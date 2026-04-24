@@ -137,3 +137,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ) 
 }
+
+AUTHENTICATION_BACKENDS = [
+    "lms_auth.api.backend.CustomBackend",
+]

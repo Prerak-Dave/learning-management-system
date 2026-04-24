@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from lms_auth.models import User,UserRole,Role
-
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class SignupSerializer(serializers.ModelSerializer):
    
@@ -31,20 +31,39 @@ class SignupSerializer(serializers.ModelSerializer):
         user.save()
         
         for role in roles:
+            is_active = False
+            if role.role_type == "student":
+                is_active = True
+            print(f"role: {role}, is_active: {is_active}")
             UserRole.objects.create(
                     user = user,
                     role = role,
+                    is_active = is_active,
                 )
         return user
         
     
-class RoleSerializer(serializers.ModelSerializer):
-    user_set = SignupSerializer(many=True)
 
-    class Meta:
-        model = Role
-        fields = ["role_type", "user_set"]
+class LoginSerializer(TokenObtainPairSerializer):
+    """
+    Serializer class to authenticate users with username, password and role.
+    """ 
+    role = serializers.IntegerField(write_only = True)
 
-class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length = 25)
-    password = serializers.CharField(style = {"input_type":"password"}, write_only = True)
+    def validate(self, attrs):
+        role_id = attrs.pop('role')
+        print(f"role id : {role_id}")
+        user = authenticate(
+            username = attrs.get('username'),
+            password = attrs.get('password'),
+            role = role_id
+        )
+        if user is None:
+            raise serializers.ValidationError("User doesn't exist or role not active!")
+        
+        data = super().get_token(user)
+
+        return {
+            "refresh" : str(data),
+            "access" : str(data.access_token),
+        }
