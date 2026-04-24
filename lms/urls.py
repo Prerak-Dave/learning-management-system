@@ -21,8 +21,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    #signin link
+    #authentication link
     path("auth/", include('lms_auth.api.urls')),
-
-    #login url
+    #course CRUD link 
+    # path("courses/", include('lms_course.api.urls'))
 ]
