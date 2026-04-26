@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'lms_auth',
+    'lms_course',
     'multiselectfield',
     'rest_framework_simplejwt',
 ]
