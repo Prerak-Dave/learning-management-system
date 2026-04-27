@@ -37,7 +37,7 @@ def process_topic_material(self, topic_id: int) -> dict:
     try:
         topic = Topic.objects.get(pk=topic_id)
     except Topic.DoesNotExist:
-        logger.error("Topic id=%s not found – aborting task", topic_id)
+        logger.error("Topic id=%s not found - aborting task", topic_id)
         return {"status": "error", "topic_id": topic_id, "detail": "Topic not found"}
 
     # Mark as PROCESSING
@@ -59,7 +59,7 @@ def process_topic_material(self, topic_id: int) -> dict:
         ]
 
         for description, progress in steps:
-            logger.debug("Topic %s – %s (%s%%)", topic_id, description, progress)
+            logger.debug("Topic %s - %s (%s%%)", topic_id, description, progress)
             time.sleep(1)  # simulate I/O-bound work
             topic.upload_progress = progress
             topic.save(update_fields=["upload_progress"])

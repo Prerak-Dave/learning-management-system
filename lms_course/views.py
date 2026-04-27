@@ -11,8 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Assignment, Course, Enrollment, Submission, Topic, UploadStatus
-from api.permissions import IsActiveMentor, IsCourseOwner, IsEnrolledStudent
-from api.serializers import (
+from lms_course.api.permissions import IsActiveMentor, IsCourseOwner, IsEnrolledStudent
+from lms_course.api.serializers import (
     AssignmentSerializer,
     CourseDetailSerializer,
     CourseListSerializer,
@@ -24,7 +24,7 @@ from api.serializers import (
     TopicReadSerializer,
     TopicSerializer,
 )
-from api.tasks import process_topic_material
+from lms_course.api.tasks import process_topic_material
 
 logger = logging.getLogger(__name__)
 

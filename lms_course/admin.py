@@ -1,3 +1,4 @@
 from django.contrib import admin
+from lms_course.models import Course,Topic,Assignment,Enrollment
 
-# Register your models here.
+admin.site.register([Course, Topic, Assignment, Enrollment])

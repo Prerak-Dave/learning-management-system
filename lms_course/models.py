@@ -1,16 +1,13 @@
-<<<<<<< HEAD
 """
 Models for the lms_course app.
 
 Covers: Course, Topic, Assignment, Submission, Enrollment.
 """
 
-import logging
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
 
-logger = logging.getLogger(__name__)
 
 
 class UploadStatus(models.TextChoices):
@@ -25,12 +22,8 @@ class Course(models.Model):
 
     title = models.CharField(max_length=255)
     description = models.TextField()
-    start_date = models.DateField()
-    creator = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="created_courses",
-    )
+    start_date = models.DateField(auto_now_add=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="created_courses",)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -47,14 +40,10 @@ class Topic(models.Model):
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="topics")
     title = models.CharField(max_length=255)
-    material = models.FileField(upload_to="topics/materials/", null=True, blank=True)
-    thumbnail = models.ImageField(upload_to="topics/thumbnails/", null=True, blank=True)
-    upload_status = models.CharField(
-        max_length=20,
-        choices=UploadStatus.choices,
-        default=UploadStatus.PENDING,
-    )
-    upload_progress = models.PositiveSmallIntegerField(default=0)  # 0–100
+    material = models.FileField(upload_to="media/videos/")
+    thumbnail = models.ImageField(upload_to="media/thumbnails/")
+    upload_status = models.CharField(max_length=20, choices=UploadStatus.choices, default=UploadStatus.PENDING,)
+    upload_progress = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -69,9 +58,7 @@ class Topic(models.Model):
 class Assignment(models.Model):
     """An assignment attached to a topic."""
 
-    topic = models.ForeignKey(
-        Topic, on_delete=models.CASCADE, related_name="assignments"
-    )
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="assignments")
     title = models.CharField(max_length=255)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -92,15 +79,9 @@ class Submission(models.Model):
     serializer level.
     """
 
-    assignment = models.ForeignKey(
-        Assignment, on_delete=models.CASCADE, related_name="submissions"
-    )
-    student = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="submissions",
-    )
-    file = models.FileField(upload_to="submissions/")
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name="submissions")
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name="submissions",)
+    file = models.FileField(upload_to="media/sumbmissions/")
     marks = models.IntegerField(null=True, blank=True)
     submitted_at = models.DateTimeField(default=timezone.now)
     graded_at = models.DateTimeField(null=True, blank=True)
@@ -120,14 +101,8 @@ class Submission(models.Model):
 class Enrollment(models.Model):
     """Tracks which student is enrolled in which course."""
 
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="enrollments",
-    )
-    course = models.ForeignKey(
-        Course, on_delete=models.CASCADE, related_name="enrollments"
-    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="enrollments",)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="enrollments")
     enrolled_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -140,30 +115,4 @@ class Enrollment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} enrolled in {self.course}"
-=======
-from django.db import models
-from lms_auth.models import User
 
-class Course(models.Model):
-    title = models.CharField(max_length=50, null=False, blank=False)
-    desc = models.TextField(max_length=200)
-    start_date = models.DateField(auto_now_add=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-
-class Topic(models.Model):
-    title = models.CharField(max_length=50, null=False, blank=False)
-    material = models.FileField(upload_to="media/videos/")
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    thumbnail = models.FileField(upload_to="media/thumbnails/")
-
-class Assignment(models.Model):
-    title = models.CharField(max_length=50, null=False, blank=False)
-    desc = models.TextField(max_length=200)
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
-
-class Submission(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    assignment = models.OneToOneField(Assignment, on_delete= models.CASCADE)
-    submission_file = models.FileField(upload_to="media/submissions/") 
-
->>>>>>> 3afc68c1e8c4d718d95b95e1758ce09352191c61

@@ -4,6 +4,8 @@ class CustomBackend(ModelBackend):
     def authenticate(self, request, username = ..., password = ..., **kwargs):
         role_id = kwargs.get('role')
         user = super().authenticate(request, username, password)
+        if user.is_superuser == True:
+            return user
         if user is None:
             return None
         if role_id is None:

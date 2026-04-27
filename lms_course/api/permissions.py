@@ -9,8 +9,8 @@ def _is_active_mentor(user) -> bool:
     """Return True if *user* has an active Mentor role."""
     return (
         user.is_authenticated
-        and user.user_roles.filter(
-            role__name="Mentor", is_active=True
+        and user.userrole_set.filter(
+            role__role_type="mentor", is_active=True
         ).exists()
     )
 

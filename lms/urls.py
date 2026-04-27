@@ -24,5 +24,6 @@ urlpatterns = [
     #authentication link
     path("auth/", include('lms_auth.api.urls')),
     #course CRUD link 
-    # path("courses/", include('lms_course.api.urls'))
+    path("courses/", include('lms_course.api.urls'))
 ]
+ 
