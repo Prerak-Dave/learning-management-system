@@ -1,5 +1,5 @@
 """
-celery.py – Celery application entry point.
+celery.py - Celery application entry point.
 
 Place this file alongside settings.py (i.e., in the same directory as manage.py
 or inside your project package, next to settings.py).
@@ -25,7 +25,3 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 
-@app.task(bind=True, ignore_result=True)
-def debug_task(self):
-    """Utility task to verify Celery is running."""
-    print(f"Request: {self.request!r}")

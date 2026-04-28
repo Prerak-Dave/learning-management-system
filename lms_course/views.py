@@ -1,8 +1,3 @@
-"""
-ViewSets for the lms_course app.
-"""
-
-import logging
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, viewsets
@@ -12,21 +7,8 @@ from rest_framework.response import Response
 
 from .models import Assignment, Course, Enrollment, Submission, Topic, UploadStatus
 from lms_course.api.permissions import IsActiveMentor, IsCourseOwner, IsEnrolledStudent
-from lms_course.api.serializers import (
-    AssignmentSerializer,
-    CourseDetailSerializer,
-    CourseListSerializer,
-    EnrolledStudentSerializer,
-    EnrollmentSerializer,
-    SubmissionCreateSerializer,
-    SubmissionDetailSerializer,
-    SubmissionGradeSerializer,
-    TopicReadSerializer,
-    TopicSerializer,
-)
-from lms_course.api.tasks import process_topic_material
+from lms_course.api.serializers import *
 
-logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -137,14 +119,11 @@ class TopicViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsActiveMentor(), IsCourseOwner()]
         return [IsAuthenticated()]
 
-    def perform_create(self, serializer):
-        """Save topic as PENDING; kick off Celery task if material uploaded."""
-        topic = serializer.save(upload_status=UploadStatus.PENDING)
-        if topic.material:
-            logger.info(
-                "Queuing material processing for Topic id=%s", topic.pk
-            )
-            process_topic_material.delay(topic.pk)
+    # def perform_create(self, serializer):
+    #     """Save topic as PENDING"""
+    #     topic = serializer.save(upload_status=UploadStatus.PENDING)
+    #     if topic.material:
+    #         process_topic_material.delay(topic.pk)
 
     def perform_update(self, serializer):
         """Re-trigger processing task when material changes."""
@@ -154,7 +133,6 @@ class TopicViewSet(viewsets.ModelViewSet):
             topic.upload_status = UploadStatus.PENDING
             topic.upload_progress = 0
             topic.save(update_fields=["upload_status", "upload_progress"])
-            process_topic_material.delay(topic.pk)
 
 
 # ---------------------------------------------------------------------------
@@ -308,5 +286,5 @@ class EnrollmentViewSet(
 def _is_active_mentor(user) -> bool:
     return (
         user.is_authenticated
-        and user.user_roles.filter(role__name="Mentor", is_active=True).exists()
+        and user.userrole_set.filter(role__role_type="Mentor", is_active=True).exists()
     )
