@@ -87,6 +87,7 @@ class TopicReadSerializer(serializers.ModelSerializer):
             "upload_status",
             "upload_progress",
         ]
+        read_only = True
 
 
 # ---------------------------------------------------------------------------

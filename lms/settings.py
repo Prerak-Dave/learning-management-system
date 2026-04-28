@@ -56,7 +56,6 @@ INSTALLED_APPS = [
     'lms_course',
     'multiselectfield',
     'rest_framework_simplejwt',
-    
 ]
 
 MIDDLEWARE = [

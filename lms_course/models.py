@@ -52,11 +52,11 @@ class Topic(models.Model):
         indexes = [models.Index(fields=["course"])]
 
     def __str__(self) -> str:
-        return f"{self.course.title} – {self.title}"
+        return f"{self.course.title} - {self.title}"
 
 
 class Assignment(models.Model):
-    """An assignment attached to a topic."""
+    """An assignment attached to a topic."""    
 
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="assignments")
     title = models.CharField(max_length=255)

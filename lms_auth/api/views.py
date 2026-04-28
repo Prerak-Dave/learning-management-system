@@ -6,6 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 class SignupView(APIView):
+    permission_classes = [AllowAny]
     def post(self,request):
         serializer = SignupSerializer(data = request.data)
         data = {}

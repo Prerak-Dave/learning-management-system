@@ -71,5 +71,5 @@ from celery import shared_task
 #         raise self.retry(exc=exc)
 
 @shared_task
-def send_enrolment_email(self,):
+def send_enrolment_email(self,course):
     pass

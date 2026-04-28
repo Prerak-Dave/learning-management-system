@@ -115,6 +115,7 @@ class TopicViewSet(viewsets.ModelViewSet):
         return TopicSerializer
 
     def get_permissions(self):
+        print(f"----- {self.action} --------")
         if self.action in ("create", "update", "partial_update", "destroy"):
             return [IsAuthenticated(), IsActiveMentor(), IsCourseOwner()]
         return [IsAuthenticated()]
@@ -278,13 +279,9 @@ class EnrollmentViewSet(
         instance.delete()
 
 
-# ---------------------------------------------------------------------------
-# Helper
-# ---------------------------------------------------------------------------
-
 
 def _is_active_mentor(user) -> bool:
     return (
         user.is_authenticated
-        and user.userrole_set.filter(role__role_type="Mentor", is_active=True).exists()
+        and user.userrole_set.filter(role__role_type="mentor", is_active=True).exists()
     )
