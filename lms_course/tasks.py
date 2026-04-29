@@ -12,31 +12,84 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-@shared_task(bind = True)
-def process_topic_material(self, topic_id: int) -> dict:
+# Allowed file types and size limit
+ALLOWED_EXTENSIONS = {".pdf", ".mp4", ".mov"}
+MAX_FILE_SIZE_MB = 15
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024  # 15MB in bytes
+ 
+ 
+@shared_task
+def process_topic_material(topic_id):
     """
-    Process an uploaded material file for a Topic.
+    Validates and processes an uploaded material file for a Topic.
+ 
+    Checks:
+        1. File must be a .pdf, .mp4, or .mov
+        2. File must not exceed 15MB
+ 
+    Marks topic.upload_status as:
+        - PROCESSING while running
+        - COMPLETED if all checks pass
+        - FAILED if any check fails (with a reason logged)
+ 
+    Triggered from TopicViewSet.perform_create() and perform_update().
     """
-    # Defer model import so the task module is importable before Django is ready
+    import os
+    # Imported inside the function so this module loads before Django is fully ready
     from lms_course.models import Topic, UploadStatus
-
-
+ 
     try:
         topic = Topic.objects.get(pk=topic_id)
     except Topic.DoesNotExist:
-        return {"status": "error", "topic_id": topic_id, "detail": "Topic not found"}
-
-    # Mark as PROCESSING
+        return {"status": "error", "topic_id": topic_id}
+ 
+    # Mark as PROCESSING so the API can show a "processing" state
     topic.upload_status = UploadStatus.PROCESSING
-    topic.save(update_fields=["upload_status"])
-
+    topic.upload_progress = 0
+    topic.save(update_fields=["upload_status", "upload_progress"])
+ 
     try:
-        pass
-    except:
+        # ── Step 1: Check file extension ──────────────────────────────────
+        # os.path.splitext splits "lecture.pdf" into ("lecture", ".pdf")
+        _, extension = os.path.splitext(topic.material.name)
+        extension = extension.lower()  # normalize: ".PDF" → ".pdf"
+ 
+        if extension not in ALLOWED_EXTENSIONS:
+            topic.upload_status = UploadStatus.FAILED
+            topic.save(update_fields=["upload_status"])
+            return {
+                "status": "failed",
+                "topic_id": topic_id,
+                "reason": f"Invalid file type '{extension}'. Only PDF, MP4, and MOV are allowed.",
+            }
+ 
+        topic.upload_progress = 50
+        topic.save(update_fields=["upload_progress"])
+
+        # ── Step 2: Check file size ───────────────────────────────────────
+        # topic.material.size gives the file size in bytes directly from the FileField
+        file_size_bytes = topic.material.size
+        file_size_mb = file_size_bytes / (1024 * 1024)
+ 
+        if file_size_bytes > MAX_FILE_SIZE_BYTES:
+            topic.upload_status = UploadStatus.FAILED
+            topic.save(update_fields=["upload_status"])
+            return {
+                "status": "failed",
+                "topic_id": topic_id,
+                "reason": f"File size {file_size_mb:.2f}MB exceeds the {MAX_FILE_SIZE_MB}MB limit.",
+            }
+ 
+        topic.upload_progress = 100
+        topic.upload_status = UploadStatus.COMPLETED
+        topic.save(update_fields=["upload_status", "upload_progress"])
+        return {"status": "completed", "topic_id": topic_id}
+ 
+    except Exception as e:
         topic.upload_status = UploadStatus.FAILED
         topic.save(update_fields=["upload_status"])
-
+        return {"status": "failed", "topic_id": topic_id, "reason": str(e)}
+    
 
 @shared_task
 def send_enrolment_email(course_title, student_username, student_email):
