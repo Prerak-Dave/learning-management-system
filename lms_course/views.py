@@ -9,6 +9,8 @@ from .models import Assignment, Course, Enrollment, Submission, Topic, UploadSta
 from lms_course.api.permissions import IsActiveMentor, IsCourseOwner, IsEnrolledStudent
 from lms_course.api.serializers import *
 
+from lms_course.tasks import send_enrolment_email, send_grade_email, process_topic_material
+
 
 
 # ---------------------------------------------------------------------------
@@ -120,11 +122,11 @@ class TopicViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsActiveMentor(), IsCourseOwner()]
         return [IsAuthenticated()]
 
-    # def perform_create(self, serializer):
-    #     """Save topic as PENDING"""
-    #     topic = serializer.save(upload_status=UploadStatus.PENDING)
-    #     if topic.material:
-    #         process_topic_material.delay(topic.pk)
+    def perform_create(self, serializer):
+        """Save topic as PENDING"""
+        topic = serializer.save(upload_status=UploadStatus.PENDING)
+        if topic.material:
+            process_topic_material.delay(topic.pk)
 
     def perform_update(self, serializer):
         """Re-trigger processing task when material changes."""
@@ -223,6 +225,7 @@ class SubmissionViewSet(
     def grade(self, request, pk=None):
         """Grade a student submission (mentor only)."""
         submission = self.get_object()
+        
 
         # Verify mentor owns the course
         if submission.assignment.topic.course.creator != request.user:
@@ -231,11 +234,21 @@ class SubmissionViewSet(
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        was_ungraded = submission.marks is None
         serializer = SubmissionGradeSerializer(
             submission, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        
+        if was_ungraded and submission.marks is not None:
+            student = submission.student
+            send_grade_email.delay(
+                student_username = student.username,
+                student_email = student.email,
+                assignment_title = submission.assignment.title,
+                marks = submission.marks
+            )
         return Response(serializer.data)
 
 
@@ -270,6 +283,14 @@ class EnrollmentViewSet(
 
     def get_serializer_class(self):
         return EnrollmentSerializer
+    
+    def perform_create(self, serializer):
+        send_enrolment_email.delay(
+            student_email= self.request.user.email,
+            course_title= serializer.validated_data["course"].title,
+            student_username= self.request.user.username
+        )
+        return super().perform_create(serializer)
 
     def perform_destroy(self, instance):
         if instance.user != self.request.user:

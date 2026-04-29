@@ -14,7 +14,7 @@ import os
 from celery import Celery
 
 # Point Celery at the Django settings module
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lms.settings")
 
 app = Celery("lms")
 

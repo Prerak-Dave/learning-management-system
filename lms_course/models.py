@@ -43,7 +43,6 @@ class Topic(models.Model):
     material = models.FileField(upload_to="media/videos/")
     thumbnail = models.ImageField(upload_to="media/thumbnails/")
     upload_status = models.CharField(max_length=20, choices=UploadStatus.choices, default=UploadStatus.PENDING,)
-    upload_progress = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
