@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LMS - Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="page" id="page-login">
+  <div class="card">
+    <h2>Login</h2>
+    <div id="login-error" class="error-msg"></div>
+    <label>Username</label>
+    <input type="text" id="login-username" placeholder="Enter username" />
+    <label>Password</label>
+    <input type="password" id="login-password" placeholder="Enter password" />
+    <label>Role</label>
+    <div class="radio-group">
+      <label><input type="radio" name="login-role" value="1" /> Student</label>
+      <label><input type="radio" name="login-role" value="2" /> Mentor</label>
+    </div>
+    <button onclick="doLogin()">Login</button>
+    <p>Don't have an account? <a href="#" onclick="showPage('page-signup')">Sign up</a></p>
+  </div>
+</div>
+
+<div class="page hidden" id="page-signup">
+  <div class="card">
+    <h2>Sign Up</h2>
+    <div id="signup-error" class="error-msg"></div>
+    <div id="signup-success" class="success-msg"></div>
+    <label>Username</label>
+    <input type="text" id="signup-username" placeholder="Enter username" />
+    <label>Email</label>
+    <input type="email" id="signup-email" placeholder="Enter email" />
+    <label>Password</label>
+    <input type="password" id="signup-password" placeholder="Enter password" />
+    <label>Confirm Password</label>
+    <input type="password" id="signup-password2" placeholder="Confirm password" />
+    <label>Role</label>
+    <select id="signup-role">
+      <option value="">-- Select Role --</option>
+      <option value="1">Student</option>
+      <option value="2">Mentor</option>
+    </select>
+    <button onclick="doSignup()">Sign Up</button>
+    <p>Already have an account? <a href="#" onclick="showPage('page-login')">Login</a></p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="page hidden" id="page-app">
+  <div class="topbar">
+    <span id="app-title">LMS Portal</span>
+    <div>
+      <span id="user-info"></span>
+      <button class="btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="content" id="main-content">
+      <p>Select a section from the sidebar.</p>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
