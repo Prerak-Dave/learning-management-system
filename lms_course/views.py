@@ -1,7 +1,3 @@
-"""
-ViewSets for the lms_course app.
-"""
-
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, viewsets
@@ -11,19 +7,9 @@ from rest_framework.response import Response
 
 from .models import Assignment, Course, Enrollment, Submission, Topic, UploadStatus
 from lms_course.api.permissions import IsActiveMentor, IsCourseOwner, IsEnrolledStudent
-from lms_course.api.serializers import (
-    AssignmentSerializer,
-    CourseDetailSerializer,
-    CourseListSerializer,
-    EnrolledStudentSerializer,
-    EnrollmentSerializer,
-    SubmissionCreateSerializer,
-    SubmissionDetailSerializer,
-    SubmissionGradeSerializer,
-    TopicReadSerializer,
-    TopicSerializer,
-)
-from lms_course.api.tasks import process_topic_material
+from lms_course.api.serializers import *
+
+from lms_course.tasks import send_enrolment_email, send_grade_email, process_topic_material
 
 
 
@@ -131,12 +117,13 @@ class TopicViewSet(viewsets.ModelViewSet):
         return TopicSerializer
 
     def get_permissions(self):
+        print(f"----- {self.action} --------")
         if self.action in ("create", "update", "partial_update", "destroy"):
             return [IsAuthenticated(), IsActiveMentor(), IsCourseOwner()]
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
-        """Save topic as PENDING; kick off Celery task if material uploaded."""
+        """Save topic as PENDING"""
         topic = serializer.save(upload_status=UploadStatus.PENDING)
         if topic.material:
             process_topic_material.delay(topic.pk)
@@ -149,7 +136,6 @@ class TopicViewSet(viewsets.ModelViewSet):
             topic.upload_status = UploadStatus.PENDING
             topic.upload_progress = 0
             topic.save(update_fields=["upload_status", "upload_progress"])
-            process_topic_material.delay(topic.pk)
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +225,7 @@ class SubmissionViewSet(
     def grade(self, request, pk=None):
         """Grade a student submission (mentor only)."""
         submission = self.get_object()
+        
 
         # Verify mentor owns the course
         if submission.assignment.topic.course.creator != request.user:
@@ -247,11 +234,21 @@ class SubmissionViewSet(
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        was_ungraded = submission.marks is None
         serializer = SubmissionGradeSerializer(
             submission, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        
+        if was_ungraded and submission.marks is not None:
+            student = submission.student
+            send_grade_email.delay(
+                student_username = student.username,
+                student_email = student.email,
+                assignment_title = submission.assignment.title,
+                marks = submission.marks
+            )
         return Response(serializer.data)
 
 
@@ -286,6 +283,14 @@ class EnrollmentViewSet(
 
     def get_serializer_class(self):
         return EnrollmentSerializer
+    
+    def perform_create(self, serializer):
+        send_enrolment_email.delay(
+            student_email= self.request.user.email,
+            course_title= serializer.validated_data["course"].title,
+            student_username= self.request.user.username
+        )
+        return super().perform_create(serializer)
 
     def perform_destroy(self, instance):
         if instance.user != self.request.user:
@@ -295,13 +300,9 @@ class EnrollmentViewSet(
         instance.delete()
 
 
-# ---------------------------------------------------------------------------
-# Helper
-# ---------------------------------------------------------------------------
-
 
 def _is_active_mentor(user) -> bool:
     return (
         user.is_authenticated
-        and user.user_roles.filter(role__name="Mentor", is_active=True).exists()
+        and user.userrole_set.filter(role__role_type="mentor", is_active=True).exists()
     )

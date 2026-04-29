@@ -43,7 +43,6 @@ class Topic(models.Model):
     material = models.FileField(upload_to="media/videos/")
     thumbnail = models.ImageField(upload_to="media/thumbnails/")
     upload_status = models.CharField(max_length=20, choices=UploadStatus.choices, default=UploadStatus.PENDING,)
-    upload_progress = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -52,11 +51,11 @@ class Topic(models.Model):
         indexes = [models.Index(fields=["course"])]
 
     def __str__(self) -> str:
-        return f"{self.course.title} – {self.title}"
+        return f"{self.course.title} - {self.title}"
 
 
 class Assignment(models.Model):
-    """An assignment attached to a topic."""
+    """An assignment attached to a topic."""    
 
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="assignments")
     title = models.CharField(max_length=255)

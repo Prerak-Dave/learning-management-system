@@ -1,6 +1,9 @@
 """
 celery.py - Celery application entry point.
 
+Place this file alongside settings.py (i.e., in the same directory as manage.py
+or inside your project package, next to settings.py).
+
 Usage:
     celery -A <project_name> worker -l info
     celery -A <project_name> beat -l info   # if you add periodic tasks later
@@ -11,7 +14,7 @@ import os
 from lms.celery import Celery
 
 # Point Celery at the Django settings module
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lms.settings")
 
 app = Celery("lms")
 
@@ -22,7 +25,3 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 
-@app.task(bind=True, ignore_result=True)
-def debug_task(self):
-    """Utility task to verify Celery is running."""
-    print(f"Request: {self.request!r}")

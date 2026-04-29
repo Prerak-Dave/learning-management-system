@@ -8,65 +8,60 @@ Handles asynchronous material upload processing.
 import time
 
 from lms.celery import shared_task
+from celery import shared_task
+from django.core.mail import send_mail
+from django.conf import settings
 
-
-
-@shared_task(bind=True, max_retries=3, default_retry_delay=10)
-def process_topic_material(self, topic_id: int) -> dict:
+@shared_task
+def process_topic_material(topic_id):
     """
-    Process an uploaded material file for a Topic.
-
-    Steps:
-        1. Mark topic as PROCESSING.
-        2. Simulate file processing (e.g., virus scan, format conversion).
-        3. Update progress incrementally.
-        4. Mark as COMPLETED (or FAILED on error).
-
-    Args:
-        topic_id: PK of the Topic whose material should be processed.
-
-    Returns:
-        dict with status and topic_id.
+    Simulates processing an uploaded material file for a Topic.
+    Marks the topic as PROCESSING, runs through a few steps, then marks it COMPLETED.
+    Triggered from TopicViewSet.perform_create() and perform_update().
     """
-    # Defer model import so the task module is importable before Django is ready
-    from lms_course.models import Topic, UploadStatus
+   pass
 
 
-    try:
-        topic = Topic.objects.get(pk=topic_id)
-    except Topic.DoesNotExist:
-        return {"status": "error", "topic_id": topic_id, "detail": "Topic not found"}
+@shared_task
+def send_enrollment_email(student_email, student_name, course_title):
+    """
+    Sends a confirmation email to a student after they enroll in a course.
+    Triggered from EnrollmentSerializer.create().
+    """
+    subject = "Course Enrollment Successful"
+    message = (
+        f"Hi {student_name},\n\n"
+        f"You have successfully enrolled in the course: {course_title}.\n\n"
+        f"We hope you enjoy learning!\n\n"
+        f"Regards,\nThe LMS Team"
+    )
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[student_email],
+        fail_silently=True,  # don't crash the app if SMTP is misconfigured
+    )
 
-    # Mark as PROCESSING
-    topic.upload_status = UploadStatus.PROCESSING
-    topic.upload_progress = 0
-    topic.save(update_fields=["upload_status", "upload_progress"])
 
-    try:
-        # ------------------------------------------------------------------ #
-        # Simulated processing pipeline                                        #
-        # Replace each step with real logic (e.g., boto3 upload, ffmpeg, ...) #
-        # ------------------------------------------------------------------ #
-        steps = [
-            ("Validating file format", 20),
-            ("Scanning for malware", 40),
-            ("Generating preview", 60),
-            ("Optimising storage", 80),
-            ("Finalising", 100),
-        ]
-
-        for description, progress in steps:
-            time.sleep(1)  # simulate I/O-bound work
-            topic.upload_progress = progress
-            topic.save(update_fields=["upload_progress"])
-
-        topic.upload_status = UploadStatus.COMPLETED
-        topic.save(update_fields=["upload_status"])
-        return {"status": "completed", "topic_id": topic_id}
-
-    except Exception as exc:
-        topic.upload_status = UploadStatus.FAILED
-        topic.save(update_fields=["upload_status"])
-
-        # Retry with exponential back-off
-        raise self.retry(exc=exc)
+@shared_task
+def send_grade_email(student_email, student_name, assignment_title, marks):
+    """
+    Sends a grade notification email to a student after their submission is graded.
+    Triggered from SubmissionViewSet.grade().
+    """
+    subject = "Assignment Graded"
+    message = (
+        f"Hi {student_name},\n\n"
+        f"Your assignment '{assignment_title}' has been graded.\n"
+        f"Marks obtained: {marks}\n\n"
+        f"Keep up the good work!\n\n"
+        f"Regards,\nThe LMS Team"
+    )
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[student_email],
+        fail_silently=True,
+    )
