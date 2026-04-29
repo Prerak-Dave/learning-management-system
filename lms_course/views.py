@@ -2,7 +2,6 @@
 ViewSets for the lms_course app.
 """
 
-import logging
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, viewsets
@@ -26,7 +25,6 @@ from lms_course.api.serializers import (
 )
 from lms_course.api.tasks import process_topic_material
 
-logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -141,9 +139,6 @@ class TopicViewSet(viewsets.ModelViewSet):
         """Save topic as PENDING; kick off Celery task if material uploaded."""
         topic = serializer.save(upload_status=UploadStatus.PENDING)
         if topic.material:
-            logger.info(
-                "Queuing material processing for Topic id=%s", topic.pk
-            )
             process_topic_material.delay(topic.pk)
 
     def perform_update(self, serializer):

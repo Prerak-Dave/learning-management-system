@@ -4,12 +4,11 @@ Celery tasks for the lms_course app.
 Handles asynchronous material upload processing.
 """
 
-import logging
+
 import time
 
-from celery import shared_task
+from lms.celery import shared_task
 
-logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=10)
@@ -32,12 +31,10 @@ def process_topic_material(self, topic_id: int) -> dict:
     # Defer model import so the task module is importable before Django is ready
     from lms_course.models import Topic, UploadStatus
 
-    logger.info("Starting material processing for Topic id=%s", topic_id)
 
     try:
         topic = Topic.objects.get(pk=topic_id)
     except Topic.DoesNotExist:
-        logger.error("Topic id=%s not found - aborting task", topic_id)
         return {"status": "error", "topic_id": topic_id, "detail": "Topic not found"}
 
     # Mark as PROCESSING
@@ -59,20 +56,15 @@ def process_topic_material(self, topic_id: int) -> dict:
         ]
 
         for description, progress in steps:
-            logger.debug("Topic %s - %s (%s%%)", topic_id, description, progress)
             time.sleep(1)  # simulate I/O-bound work
             topic.upload_progress = progress
             topic.save(update_fields=["upload_progress"])
 
         topic.upload_status = UploadStatus.COMPLETED
         topic.save(update_fields=["upload_status"])
-        logger.info("Material processing COMPLETED for Topic id=%s", topic_id)
         return {"status": "completed", "topic_id": topic_id}
 
     except Exception as exc:
-        logger.exception(
-            "Material processing FAILED for Topic id=%s: %s", topic_id, exc
-        )
         topic.upload_status = UploadStatus.FAILED
         topic.save(update_fields=["upload_status"])
 
