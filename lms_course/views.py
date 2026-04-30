@@ -134,8 +134,7 @@ class TopicViewSet(viewsets.ModelViewSet):
         topic = serializer.save()
         if topic.material and topic.material != old_material:
             topic.upload_status = UploadStatus.PENDING
-            topic.upload_progress = 0
-            topic.save(update_fields=["upload_status", "upload_progress"])
+            topic.save(update_fields=["upload_status"])
 
 
 # ---------------------------------------------------------------------------

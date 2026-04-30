@@ -1,71 +1,468 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LMS - Login</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LMS</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="page" id="page-login">
-  <div class="card">
-    <h2>Login</h2>
-    <div id="login-error" class="error-msg"></div>
-    <label>Username</label>
-    <input type="text" id="login-username" placeholder="Enter username" />
-    <label>Password</label>
-    <input type="password" id="login-password" placeholder="Enter password" />
-    <label>Role</label>
-    <div class="radio-group">
-      <label><input type="radio" name="login-role" value="1" /> Student</label>
-      <label><input type="radio" name="login-role" value="2" /> Mentor</label>
-    </div>
-    <button onclick="doLogin()">Login</button>
-    <p>Don't have an account? <a href="#" onclick="showPage('page-signup')">Sign up</a></p>
+<!-- ── Header ── -->
+<header>
+  <span class="logo">LMS</span>
+  <div class="right">
+    <span id="hdr-user" class="hidden"></span>
+    <button class="btn btn-secondary hidden" id="btn-logout" onclick="logout()" style="padding:4px 12px;font-size:13px">Logout</button>
   </div>
-</div>
+</header>
 
-<div class="page hidden" id="page-signup">
-  <div class="card">
-    <h2>Sign Up</h2>
-    <div id="signup-error" class="error-msg"></div>
-    <div id="signup-success" class="success-msg"></div>
-    <label>Username</label>
-    <input type="text" id="signup-username" placeholder="Enter username" />
-    <label>Email</label>
-    <input type="email" id="signup-email" placeholder="Enter email" />
-    <label>Password</label>
-    <input type="password" id="signup-password" placeholder="Enter password" />
-    <label>Confirm Password</label>
-    <input type="password" id="signup-password2" placeholder="Confirm password" />
-    <label>Role</label>
-    <select id="signup-role">
-      <option value="">-- Select Role --</option>
-      <option value="1">Student</option>
-      <option value="2">Mentor</option>
-    </select>
-    <button onclick="doSignup()">Sign Up</button>
-    <p>Already have an account? <a href="#" onclick="showPage('page-login')">Login</a></p>
-  </div>
-</div>
+<div class="layout">
 
-<!-- MAIN APP -->
-<div class="page hidden" id="page-app">
-  <div class="topbar">
-    <span id="app-title">LMS Portal</span>
-    <div>
-      <span id="user-info"></span>
-      <button class="btn-sm" onclick="doLogout()">Logout</button>
+  <!-- ── Sidebar ── -->
+  <nav id="sidebar" class="hidden">
+    <div class="nav-group">
+      <span class="nav-label">Courses</span>
+      <button class="nav-item" onclick="go('courses')">All Courses</button>
+      <button class="nav-item" onclick="go('enrollments')">My Enrollments</button>
     </div>
-  </div>
+    <div class="nav-group" id="nav-mentor" style="display:none">
+      <span class="nav-label">Mentor</span>
+      <button class="nav-item" onclick="go('manage-courses')">Manage Courses</button>
+      <button class="nav-item" onclick="go('topics')">Topics</button>
+      <button class="nav-item" onclick="go('assignments')">Assignments</button>
+      <button class="nav-item" onclick="go('submissions')">Grade Submissions</button>
+      <button class="nav-item" onclick="go('enrolled-students')">Enrolled Students</button>
+    </div>
+    <div class="nav-group" id="nav-student" style="display:none">
+      <span class="nav-label">Student</span>
+      <button class="nav-item" onclick="go('my-topics')">Topics</button>
+      <button class="nav-item" onclick="go('my-assignments')">Assignments</button>
+      <button class="nav-item" onclick="go('my-submissions')">My Submissions</button>
+      <button class="nav-item" onclick="go('submit')">Submit Assignment</button>
+    </div>
+    <div class="nav-group">
+      <span class="nav-label">Account</span>
+      <button class="nav-item" onclick="go('token')">Refresh Token</button>
+    </div>
+  </nav>
 
-  <div class="layout">
-    <div class="sidebar" id="sidebar"></div>
-    <div class="content" id="main-content">
-      <p>Select a section from the sidebar.</p>
+  <!-- ── Main content ── -->
+  <main>
+
+    <!-- AUTH -->
+    <div class="page active" id="page-auth">
+      <div class="auth-wrap">
+        <h2 style="margin-bottom:18px">Learning Management System</h2>
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="authTab('login')">Login</button>
+          <button class="auth-tab" onclick="authTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- Login form -->
+        <div id="tab-login">
+          <div class="form-row">
+            <label>Username</label>
+            <input type="text" id="l-username" placeholder="username">
+          </div>
+          <div class="form-row">
+            <label>Password</label>
+            <input type="password" id="l-password" placeholder="password">
+          </div>
+          <div class="form-row">
+            <label>Login as</label>
+            <div class="radio-group">
+              <label><input type="radio" name="login-role" value="1"> Mentor</label>
+              <label><input type="radio" name="login-role" value="2" checked> Student</label>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="login()">Login</button>
+          <div class="response" id="r-login"></div>
+        </div>
+
+        <!-- Signup form -->
+        <div id="tab-signup" class="hidden">
+          <div class="form-row">
+            <label>Username</label>
+            <input type="text" id="s-username" placeholder="username">
+          </div>
+          <div class="form-row">
+            <label>Email</label>
+            <input type="email" id="s-email" placeholder="you@example.com">
+          </div>
+          <div class="form-row">
+            <label>Password</label>
+            <input type="password" id="s-password" placeholder="password">
+          </div>
+          <div class="form-row">
+            <label>Confirm Password</label>
+            <input type="password" id="s-password2" placeholder="confirm password">
+          </div>
+          <div class="form-row">
+            <label>Role(s)</label>
+            <div class="check-group">
+              <label><input type="checkbox" class="signup-role" value="1"> Mentor</label>
+              <label><input type="checkbox" class="signup-role" value="2" checked> Student</label>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="signup()">Create Account</button>
+          <div class="response" id="r-signup"></div>
+        </div>
+      </div>
     </div>
-  </div>
+
+    <!-- ALL COURSES -->
+    <div class="page" id="page-courses">
+      <h2>Courses</h2>
+      <p class="sub">Browse all available courses</p>
+      <div class="card">
+        <div class="grid-2">
+          <div class="form-row">
+            <label>Search</label>
+            <input type="text" id="c-search" placeholder="title or description" oninput="listCourses()">
+          </div>
+          <div class="form-row">
+            <label>Creator ID</label>
+            <input type="number" id="c-creator" placeholder="optional" oninput="listCourses()">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div id="courses-list"><div class="empty">Loading courses...</div></div>
+        <div class="response" id="r-course-enroll"></div>
+      </div>
+    </div>
+
+    <!-- MY ENROLLMENTS -->
+    <div class="page" id="page-enrollments">
+      <h2>My Enrollments</h2>
+      <p class="sub">Courses you are enrolled in</p>
+
+      <div class="card">
+        <div class="card-title">Enroll in a Course</div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="form-row" style="flex:1;margin-bottom:0">
+            <label>Course ID</label>
+            <input type="number" id="enroll-id" placeholder="course id">
+          </div>
+          <button class="btn btn-primary" onclick="enroll()">Enroll</button>
+        </div>
+        <div class="response" id="r-enroll"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Your Enrollments</div>
+        <div id="enrollments-list"><div class="empty">Loading...</div></div>
+        <div class="response" id="r-unenroll"></div>
+      </div>
+    </div>
+
+    <!-- MANAGE COURSES (mentor) -->
+    <div class="page" id="page-manage-courses">
+      <h2>Manage Courses</h2>
+      <p class="sub">Create, update, or delete your courses</p>
+
+      <div class="card">
+        <div class="card-title">Get Course</div>
+        <div class="form-row">
+          <label>Course ID</label>
+          <input type="number" id="gc-id" placeholder="id">
+        </div>
+        <button class="btn btn-primary" onclick="getCourse()">Fetch</button>
+        <div class="response" id="r-get-course"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Create Course</div>
+        <div class="form-row">
+          <label>Title</label>
+          <input type="text" id="cc-title" placeholder="course title">
+        </div>
+        <div class="form-row">
+          <label>Description</label>
+          <textarea id="cc-desc" placeholder="description"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="createCourse()">Create</button>
+        <div class="response" id="r-create-course"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Update Course</div>
+        <div class="form-row">
+          <label>Course ID</label>
+          <input type="number" id="uc-id" placeholder="id">
+        </div>
+        <div class="form-row">
+          <label>Title</label>
+          <input type="text" id="uc-title" placeholder="new title">
+        </div>
+        <div class="form-row">
+          <label>Description</label>
+          <textarea id="uc-desc" placeholder="new description"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="updateCourse('PUT')">PUT (full update)</button>
+          <button class="btn btn-secondary" onclick="updateCourse('PATCH')">PATCH (partial)</button>
+        </div>
+        <div class="response" id="r-update-course"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Delete Course</div>
+        <div class="form-row">
+          <label>Course ID</label>
+          <input type="number" id="dc-id" placeholder="id">
+        </div>
+        <button class="btn btn-danger" onclick="deleteCourse()">Delete</button>
+        <div class="response" id="r-delete-course"></div>
+      </div>
+    </div>
+
+    <!-- TOPICS (mentor) -->
+    <div class="page" id="page-topics">
+      <h2>Topics</h2>
+      <p class="sub">Manage topics within your courses</p>
+
+      <div class="card">
+        <div class="card-title">List Topics</div>
+        <div class="form-row">
+          <label>Course ID (optional)</label>
+          <input type="number" id="lt-course" placeholder="filter by course">
+        </div>
+        <button class="btn btn-primary" onclick="listTopics('r-list-topics','lt-course')">Load</button>
+        <div class="response" id="r-list-topics"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Create Topic</div>
+        <div class="form-row">
+          <label>Course ID</label>
+          <input type="number" id="ct-course" placeholder="course id">
+        </div>
+        <div class="form-row">
+          <label>Title</label>
+          <input type="text" id="ct-title" placeholder="topic title">
+        </div>
+        <div class="form-row">
+          <label>Material (video)</label>
+          <input type="file" id="ct-material">
+        </div>
+        <div class="form-row">
+          <label>Thumbnail (image)</label>
+          <input type="file" id="ct-thumb" accept="image/*">
+        </div>
+        <button class="btn btn-primary" onclick="createTopic()">Create</button>
+        <div class="response" id="r-create-topic"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Update Topic (PATCH)</div>
+        <div class="form-row">
+          <label>Topic ID</label>
+          <input type="number" id="ut-id" placeholder="id">
+        </div>
+        <div class="form-row">
+          <label>New Title</label>
+          <input type="text" id="ut-title" placeholder="new title">
+        </div>
+        <button class="btn btn-primary" onclick="updateTopic()">Update</button>
+        <div class="response" id="r-update-topic"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Delete Topic</div>
+        <div class="form-row">
+          <label>Topic ID</label>
+          <input type="number" id="dt-id" placeholder="id">
+        </div>
+        <button class="btn btn-danger" onclick="deleteTopic()">Delete</button>
+        <div class="response" id="r-delete-topic"></div>
+      </div>
+    </div>
+
+    <!-- ASSIGNMENTS (mentor) -->
+    <div class="page" id="page-assignments">
+      <h2>Assignments</h2>
+      <p class="sub">Manage assignments under your topics</p>
+
+      <div class="card">
+        <div class="card-title">List Assignments</div>
+        <div class="form-row">
+          <label>Topic ID (optional)</label>
+          <input type="number" id="la-topic" placeholder="filter by topic">
+        </div>
+        <button class="btn btn-primary" onclick="listAssignments('r-list-assign','la-topic')">Load</button>
+        <div class="response" id="r-list-assign"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Create Assignment</div>
+        <div class="form-row">
+          <label>Topic ID</label>
+          <input type="number" id="ca-topic" placeholder="topic id">
+        </div>
+        <div class="form-row">
+          <label>Title</label>
+          <input type="text" id="ca-title" placeholder="assignment title">
+        </div>
+        <div class="form-row">
+          <label>Description</label>
+          <textarea id="ca-desc" placeholder="what students need to do"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="createAssignment()">Create</button>
+        <div class="response" id="r-create-assign"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Update Assignment (PATCH)</div>
+        <div class="form-row">
+          <label>Assignment ID</label>
+          <input type="number" id="ua-id" placeholder="id">
+        </div>
+        <div class="form-row">
+          <label>Title</label>
+          <input type="text" id="ua-title" placeholder="new title">
+        </div>
+        <div class="form-row">
+          <label>Description</label>
+          <textarea id="ua-desc" placeholder="new description"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="updateAssignment()">Update</button>
+        <div class="response" id="r-update-assign"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Delete Assignment</div>
+        <div class="form-row">
+          <label>Assignment ID</label>
+          <input type="number" id="da-id" placeholder="id">
+        </div>
+        <button class="btn btn-danger" onclick="deleteAssignment()">Delete</button>
+        <div class="response" id="r-delete-assign"></div>
+      </div>
+    </div>
+
+    <!-- GRADE SUBMISSIONS (mentor) -->
+    <div class="page" id="page-submissions">
+      <h2>Grade Submissions</h2>
+      <p class="sub">View and grade student submissions</p>
+
+      <div class="card">
+        <div class="card-title">List Submissions</div>
+        <div class="grid-2">
+          <div class="form-row">
+            <label>Assignment ID (optional)</label>
+            <input type="number" id="fs-assign" placeholder="filter">
+          </div>
+          <div class="form-row">
+            <label>Student ID (optional)</label>
+            <input type="number" id="fs-student" placeholder="filter">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="listSubmissions()">Load</button>
+        <div class="response" id="r-list-sub"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Grade a Submission</div>
+        <div class="form-row">
+          <label>Submission ID</label>
+          <input type="number" id="gs-id" placeholder="submission id">
+        </div>
+        <div class="form-row">
+          <label>Marks</label>
+          <input type="number" id="gs-marks" placeholder="e.g. 85">
+        </div>
+        <button class="btn btn-primary" onclick="gradeSubmission()">Grade</button>
+        <div class="response" id="r-grade"></div>
+      </div>
+    </div>
+
+    <!-- ENROLLED STUDENTS (mentor) -->
+    <div class="page" id="page-enrolled-students">
+      <h2>Enrolled Students</h2>
+      <p class="sub">Students enrolled in your course</p>
+      <div class="card">
+        <div class="form-row">
+          <label>Course ID</label>
+          <input type="number" id="es-course" placeholder="course id">
+        </div>
+        <button class="btn btn-primary" onclick="enrolledStudents()">Load</button>
+        <div class="response" id="r-enrolled-students"></div>
+      </div>
+    </div>
+
+    <!-- MY TOPICS (student) -->
+    <div class="page" id="page-my-topics">
+      <h2>Topics</h2>
+      <p class="sub">Topics from your enrolled courses</p>
+      <div class="card">
+        <div class="form-row">
+          <label>Course ID (optional)</label>
+          <input type="number" id="st-course" placeholder="filter by course">
+        </div>
+        <button class="btn btn-primary" onclick="listTopics('r-my-topics','st-course')">Load</button>
+        <div class="response" id="r-my-topics"></div>
+      </div>
+    </div>
+
+    <!-- MY ASSIGNMENTS (student) -->
+    <div class="page" id="page-my-assignments">
+      <h2>Assignments</h2>
+      <p class="sub">Assignments from your enrolled courses</p>
+      <div class="card">
+        <div class="form-row">
+          <label>Topic ID (optional)</label>
+          <input type="number" id="sa-topic" placeholder="filter by topic">
+        </div>
+        <button class="btn btn-primary" onclick="listAssignments('r-my-assign','sa-topic')">Load</button>
+        <div class="response" id="r-my-assign"></div>
+      </div>
+    </div>
+
+    <!-- MY SUBMISSIONS (student) -->
+    <div class="page" id="page-my-submissions">
+      <h2>My Submissions</h2>
+      <p class="sub">Track your submitted work and grades</p>
+      <div class="card">
+        <button class="btn btn-primary" onclick="mySubmissions()">Load</button>
+        <div class="response" id="r-my-sub"></div>
+      </div>
+    </div>
+
+    <!-- SUBMIT ASSIGNMENT (student) -->
+    <div class="page" id="page-submit">
+      <h2>Submit Assignment</h2>
+      <p class="sub">Upload your work for an assignment</p>
+      <div class="card">
+        <div class="form-row">
+          <label>Assignment ID</label>
+          <input type="number" id="sub-assign-id" placeholder="assignment id">
+        </div>
+        <div class="form-row">
+          <label>File</label>
+          <input type="file" id="sub-file">
+        </div>
+        <button class="btn btn-primary" onclick="submitAssignment()">Submit</button>
+        <div class="response" id="r-submit"></div>
+      </div>
+    </div>
+
+    <!-- REFRESH TOKEN -->
+    <div class="page" id="page-token">
+      <h2>Refresh Token</h2>
+      <p class="sub">Get a new access token using your refresh token</p>
+      <div class="card">
+        <div class="form-row">
+          <label>Refresh Token</label>
+          <textarea id="tk-refresh" placeholder="paste refresh token here"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="refreshToken()">Refresh</button>
+        <div class="response" id="r-token"></div>
+      </div>
+    </div>
+
+  </main>
 </div>
 
 <script src="app.js"></script>

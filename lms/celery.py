@@ -11,7 +11,7 @@ Usage:
 
 import os
 
-from lms.celery import Celery
+from celery import Celery
 
 # Point Celery at the Django settings module
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lms.settings")
@@ -23,5 +23,3 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Auto-discover tasks in all installed apps
 app.autodiscover_tasks()
-
-

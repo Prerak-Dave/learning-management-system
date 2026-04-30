@@ -60,10 +60,9 @@ class TopicSerializer(serializers.ModelSerializer):
             "material",
             "thumbnail",
             "upload_status",
-            "upload_progress",
             "created_at",
             ]
-        read_only_fields = ["upload_status", "upload_progress", "created_at"]
+        read_only_fields = ["upload_status", "created_at"]
 
     def validate_course(self, course):
         """Mentor may only add topics to their own courses."""
@@ -85,7 +84,6 @@ class TopicReadSerializer(serializers.ModelSerializer):
             "material",
             "thumbnail",
             "upload_status",
-            "upload_progress",
         ]
         read_only = True
 

@@ -45,8 +45,7 @@ def process_topic_material(topic_id):
  
     # Mark as PROCESSING so the API can show a "processing" state
     topic.upload_status = UploadStatus.PROCESSING
-    topic.upload_progress = 0
-    topic.save(update_fields=["upload_status", "upload_progress"])
+    topic.save(update_fields=["upload_status"])
  
     try:
         # ── Step 1: Check file extension ──────────────────────────────────
@@ -63,8 +62,6 @@ def process_topic_material(topic_id):
                 "reason": f"Invalid file type '{extension}'. Only PDF, MP4, and MOV are allowed.",
             }
  
-        topic.upload_progress = 50
-        topic.save(update_fields=["upload_progress"])
 
         # ── Step 2: Check file size ───────────────────────────────────────
         # topic.material.size gives the file size in bytes directly from the FileField
@@ -80,9 +77,8 @@ def process_topic_material(topic_id):
                 "reason": f"File size {file_size_mb:.2f}MB exceeds the {MAX_FILE_SIZE_MB}MB limit.",
             }
  
-        topic.upload_progress = 100
         topic.upload_status = UploadStatus.COMPLETED
-        topic.save(update_fields=["upload_status", "upload_progress"])
+        topic.save(update_fields=["upload_status"])
         return {"status": "completed", "topic_id": topic_id}
  
     except Exception as e:
