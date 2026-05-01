@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Allowed file types and size limit
-ALLOWED_EXTENSIONS = {".pdf", ".mp4", ".mov"}
+ALLOWED_EXTENSIONS = {".pdf", ".mp4", ".mov", ".png"}
 MAX_FILE_SIZE_MB = 15
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024  # 15MB in bytes
  

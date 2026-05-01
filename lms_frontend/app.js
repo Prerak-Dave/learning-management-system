@@ -4,6 +4,9 @@
 // ─────────────────────────────────────────────
 const BASE_URL = 'http://127.0.0.1:8000';
 
+let isRefreshing = false;
+let refreshPromise = null;
+
 // In-memory token store (cleared on page refresh)
 const S = { access: null, refresh: null };
 
@@ -27,7 +30,7 @@ function show(id, data, ok) {
 }
 
 // Generic authenticated API call
-async function api(method, path, body, isForm) {
+async function api(method, path, body, isForm, retry=true) {
   const headers = { Authorization: 'Bearer ' + S.access };
   if (!isForm) headers['Content-Type'] = 'application/json';
 
@@ -35,7 +38,27 @@ async function api(method, path, body, isForm) {
   if (body) opts.body = isForm ? body : JSON.stringify(body);
 
   const r = await fetch(BASE_URL + path, opts);
+
+  if(r.status === 401 && retry){
+    if(!isRefreshing){
+      isRefreshing = true;
+      refreshPromise = refreshToken().finally(() => {
+        isRefreshing = false;
+      })
+    }
+
+    const success = await refreshPromise;
+
+    if(!success){
+      logout();
+      return{ok: false, status: 401, data: "Session expired"}
+    }
+
+    return api(method, path, body, isForm, false);
+  }
+
   let data;
+
   try {
     data = await r.json();
   } catch {
@@ -93,6 +116,8 @@ function logout() {
     }).catch(() => {});
   }
 
+  localStorage.removeItem("access");
+  localStorage.removeItem("refresh");
   S.access = null;
   S.refresh = null;
 
@@ -167,20 +192,22 @@ async function signup() {
 }
 
 async function refreshToken() {
-  const refresh = val('tk-refresh');
-  if (!refresh) { show('r-token', 'Paste a refresh token', false); return; }
+  if(!S.refresh) return false;
 
   try {
     const r = await fetch(BASE_URL + '/auth/login/refresh/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh })
+      body: JSON.stringify({ refresh : S.refresh })
     });
+    if(!r.ok) return false;
+
     const data = await r.json();
-    if (r.ok && data.access) S.access = data.access;
-    show('r-token', data, r.ok);
-  } catch (e) {
-    show('r-token', e.message, false);
+    if (data.access) S.access = data.access;
+    localStorage.setItem("access", data.access);
+    return true;
+  } catch {
+    return false;
   }
 }
 

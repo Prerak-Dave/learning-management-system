@@ -40,8 +40,8 @@ class Topic(models.Model):
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="topics")
     title = models.CharField(max_length=255)
-    material = models.FileField(upload_to="media/videos/")
-    thumbnail = models.ImageField(upload_to="media/thumbnails/")
+    material = models.FileField(upload_to="videos/")
+    thumbnail = models.ImageField(upload_to="thumbnails/")
     upload_status = models.CharField(max_length=20, choices=UploadStatus.choices, default=UploadStatus.PENDING,)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -80,7 +80,7 @@ class Submission(models.Model):
 
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name="submissions")
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name="submissions",)
-    file = models.FileField(upload_to="media/sumbmissions/")
+    file = models.FileField(upload_to="submissions/")
     marks = models.IntegerField(null=True, blank=True)
     submitted_at = models.DateTimeField(default=timezone.now)
     graded_at = models.DateTimeField(null=True, blank=True)
