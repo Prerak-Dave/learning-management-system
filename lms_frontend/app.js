@@ -300,7 +300,7 @@ async function createCourse() {
   show('r-create-course', r.data, r.ok);
 }
 
-async function updateCourse(method) {
+async function updateCourse() {
   const id = val('uc-id');
   if (!id) { show('r-update-course', 'Enter course ID', false); return; }
   const body = {};
@@ -308,7 +308,7 @@ async function updateCourse(method) {
   const d = val('uc-desc');
   if (t) body.title = t;
   if (d) body.description = d;
-  const r = await api(method, '/courses/' + id + '/', body);
+  const r = await api('PATCH', '/courses/' + id + '/', body);
   show('r-update-course', r.data, r.ok);
 }
 
