@@ -619,7 +619,7 @@ async function gradeSubmission() {
 }
 
 async function mySubmissions() {
-  const r = await api('GET', '/courses/submissions/my-submissions/');
+  const r = await api('GET', '/courses/submissions/');
   const el = document.getElementById('my-submissions-list');
 
   if (!r.ok) {

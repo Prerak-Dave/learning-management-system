@@ -21,10 +21,9 @@
 
   <!-- ── Sidebar ── -->
   <nav id="sidebar" class="hidden">
-    <div class="nav-group">
+        <div class="nav-group">
       <span class="nav-label">Courses</span>
       <button class="nav-item" onclick="go('courses')">All Courses</button>
-      <button class="nav-item" onclick="go('enrollments')">My Enrollments</button>
     </div>
     <div class="nav-group" id="nav-mentor" style="display:none">
       <span class="nav-label">Mentor</span>
@@ -36,15 +35,16 @@
     </div>
     <div class="nav-group" id="nav-student" style="display:none">
       <span class="nav-label">Student</span>
+      <button class="nav-item" onclick="go('enrollments')">My Enrollments</button>
       <button class="nav-item" onclick="go('my-topics')">Topics</button>
       <button class="nav-item" onclick="go('my-assignments')">Assignments</button>
       <button class="nav-item" onclick="go('my-submissions')">My Submissions</button>
       <button class="nav-item" onclick="go('submit')">Submit Assignment</button>
     </div>
-    <div class="nav-group">
+    <!-- <div class="nav-group">
       <span class="nav-label">Account</span>
       <button class="nav-item" onclick="go('token')">Refresh Token</button>
-    </div>
+    </div> -->
   </nav>
 
   <!-- ── Main content ── -->
@@ -121,10 +121,7 @@
             <label>Search</label>
             <input type="text" id="c-search" placeholder="title or description" oninput="listCourses()">
           </div>
-          <div class="form-row">
-            <label>Creator ID</label>
-            <input type="number" id="c-creator" placeholder="optional" oninput="listCourses()">
-          </div>
+          <!-- CHANGE 1: Creator ID filter removed — backend filters by role automatically -->
         </div>
       </div>
       <div class="card">
@@ -133,12 +130,13 @@
       </div>
     </div>
 
-    <!-- MY ENROLLMENTS -->
+    <!-- MY ENROLLMENTS — CHANGE 3+4 -->
+    <!-- Mentor: sees their courses list + "Show Enrollments" per course -->
+    <!-- Student: sees their own enrollments with Unenroll button -->
     <div class="page" id="page-enrollments">
       <h2>My Enrollments</h2>
-      <p class="sub">Courses you are enrolled in</p>
-
-      <div class="card">
+      <!-- CHANGE 3: Enroll form shown only for students (mentors cannot enroll) -->
+      <div class="card" id="student-enroll-form">
         <div class="card-title">Enroll in a Course</div>
         <div style="display:flex;gap:8px;align-items:flex-end">
           <div class="form-row" style="flex:1;margin-bottom:0">
@@ -151,9 +149,15 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Your Enrollments</div>
+        <!-- CHANGE 4: title is role-aware -->
+        <div class="card-title" id="enrollments-card-title">Your Enrollments</div>
         <div id="enrollments-list"><div class="empty">Loading...</div></div>
         <div class="response" id="r-unenroll"></div>
+      </div>
+
+      <!-- CHANGE 4: detail panel for mentor — shows students per course after clicking "Show Enrollments" -->
+      <div class="card" id="enrollments-detail-card" style="display:none">
+        <div id="enrollments-detail"></div>
       </div>
     </div>
 
@@ -162,7 +166,7 @@
       <h2>Manage Courses</h2>
       <p class="sub">Create, update, or delete your courses</p>
 
-      <div class="card">
+      <!-- <div class="card">
         <div class="card-title">Get Course</div>
         <div class="form-row">
           <label>Course ID</label>
@@ -170,7 +174,7 @@
         </div>
         <button class="btn btn-primary" onclick="getCourse()">Fetch</button>
         <div class="response" id="r-get-course"></div>
-      </div>
+      </div> -->
 
       <div class="card">
         <div class="card-title">Create Course</div>
@@ -200,10 +204,8 @@
           <label>Description</label>
           <textarea id="uc-desc" placeholder="new description"></textarea>
         </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="updateCourse('PUT')">PUT (full update)</button>
-          <button class="btn btn-secondary" onclick="updateCourse('PATCH')">PATCH (partial)</button>
-        </div>
+        <!-- CHANGE 2: Single Update button — always uses PATCH internally -->
+        <button class="btn btn-primary" onclick="updateCourse()">Update Course</button>
         <div class="response" id="r-update-course"></div>
       </div>
 
@@ -223,13 +225,19 @@
       <h2>Topics</h2>
       <p class="sub">Manage topics within your courses</p>
 
+      <!-- CHANGE 5+6: auto-listed on nav; search by title supported -->
       <div class="card">
-        <div class="card-title">List Topics</div>
-        <div class="form-row">
-          <label>Course ID (optional)</label>
-          <input type="number" id="lt-course" placeholder="filter by course">
+        <div class="card-title">Topics</div>
+        <div class="grid-2">
+          <div class="form-row">
+            <label>Course ID (optional)</label>
+            <input type="number" id="lt-course" placeholder="filter by course" oninput="listTopics('r-list-topics','lt-course','lt-search')">
+          </div>
+          <div class="form-row">
+            <label>Search by title</label>
+            <input type="text" id="lt-search" placeholder="topic title" oninput="listTopics('r-list-topics','lt-course','lt-search')">
+          </div>
         </div>
-        <button class="btn btn-primary" onclick="listTopics('r-list-topics','lt-course')">Load</button>
         <div class="response" id="r-list-topics"></div>
       </div>
 
@@ -256,7 +264,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Update Topic (PATCH)</div>
+        <div class="card-title">Update Topic</div>
         <div class="form-row">
           <label>Topic ID</label>
           <input type="number" id="ut-id" placeholder="id">
@@ -264,6 +272,18 @@
         <div class="form-row">
           <label>New Title</label>
           <input type="text" id="ut-title" placeholder="new title">
+        </div>
+        <div class="form-row">
+          <label>New Description</label>
+          <textarea id="ut-desc" placeholder="new description"></textarea>
+        </div>
+        <div class="form-row">
+          <label>New Material (video)</label>
+          <input type="file" id="ut-material">
+        </div>
+        <div class="form-row">
+          <label>New Thumbnail (image)</label>
+          <input type="file" id="ut-thumb" accept="image/*">
         </div>
         <button class="btn btn-primary" onclick="updateTopic()">Update</button>
         <div class="response" id="r-update-topic"></div>
@@ -285,13 +305,19 @@
       <h2>Assignments</h2>
       <p class="sub">Manage assignments under your topics</p>
 
+      <!-- CHANGE 5+6: auto-listed on nav; search by title supported -->
       <div class="card">
-        <div class="card-title">List Assignments</div>
-        <div class="form-row">
-          <label>Topic ID (optional)</label>
-          <input type="number" id="la-topic" placeholder="filter by topic">
+        <div class="card-title">Assignments</div>
+        <div class="grid-2">
+          <div class="form-row">
+            <label>Topic ID (optional)</label>
+            <input type="number" id="la-topic" placeholder="filter by topic" oninput="listAssignments('r-list-assign','la-topic','la-search')">
+          </div>
+          <div class="form-row">
+            <label>Search by title</label>
+            <input type="text" id="la-search" placeholder="assignment title" oninput="listAssignments('r-list-assign','la-topic','la-search')">
+          </div>
         </div>
-        <button class="btn btn-primary" onclick="listAssignments('r-list-assign','la-topic')">Load</button>
         <div class="response" id="r-list-assign"></div>
       </div>
 
@@ -314,7 +340,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Update Assignment (PATCH)</div>
+        <div class="card-title">Update Assignment</div>
         <div class="form-row">
           <label>Assignment ID</label>
           <input type="number" id="ua-id" placeholder="id">
@@ -392,32 +418,46 @@
       </div>
     </div>
 
-    <!-- MY TOPICS (student) -->
-    <div class="page" id="page-my-topics">
-      <h2>Topics</h2>
-      <p class="sub">Topics from your enrolled courses</p>
+    <!-- MY TOPICS (student) — CHANGE 5+6: auto-listed on nav; search by title -->
+      <div class="page" id="page-my-topics">
+      <h2>My Topics</h2>
+      <p class="sub">Browse topics for courses you are enrolled in</p>
+
       <div class="card">
+        <div class="card-title">Filter Topics</div>
         <div class="form-row">
-          <label>Course ID (optional)</label>
-          <input type="number" id="st-course" placeholder="filter by course">
+          <label>Course ID</label>
+          <input type="number" id="mt-course" placeholder="Optional course id">
         </div>
-        <button class="btn btn-primary" onclick="listTopics('r-my-topics','st-course')">Load</button>
-        <div class="response" id="r-my-topics"></div>
+        <button class="btn btn-primary" onclick="listMyTopics()">Refresh topics</button>
       </div>
+
+      <div class="card">
+        <div id="my-topics-list"></div>
+      </div>
+
+      <div class="response" id="r-my-topics"></div>
     </div>
 
-    <!-- MY ASSIGNMENTS (student) -->
+    <!-- MY ASSIGNMENTS (student) — CHANGE 5+6: auto-listed on nav; search by title -->
     <div class="page" id="page-my-assignments">
-      <h2>Assignments</h2>
-      <p class="sub">Assignments from your enrolled courses</p>
+      <h2>My Assignments</h2>
+      <p class="sub">Browse assignments for courses you are enrolled in</p>
+
       <div class="card">
+        <div class="card-title">Filter Assignments</div>
         <div class="form-row">
-          <label>Topic ID (optional)</label>
-          <input type="number" id="sa-topic" placeholder="filter by topic">
+          <label>Course ID</label>
+          <input type="number" id="ma-course" placeholder="Optional course id">
         </div>
-        <button class="btn btn-primary" onclick="listAssignments('r-my-assign','sa-topic')">Load</button>
-        <div class="response" id="r-my-assign"></div>
+        <button class="btn btn-primary" onclick="listMyAssignments()">Refresh assignments</button>
       </div>
+
+      <div class="card">
+        <div id="my-assignments-list"></div>
+      </div>
+
+      <div class="response" id="r-my-assignments"></div>
     </div>
 
     <!-- MY SUBMISSIONS (student) -->
@@ -425,9 +465,9 @@
       <h2>My Submissions</h2>
       <p class="sub">Track your submitted work and grades</p>
       <div class="card">
-        <button class="btn btn-primary" onclick="mySubmissions()">Load</button>
-        <div class="response" id="r-my-sub"></div>
+        <div id="my-submissions-list"></div>
       </div>
+      <div class="response" id="r-my-sub"></div>
     </div>
 
     <!-- SUBMIT ASSIGNMENT (student) -->

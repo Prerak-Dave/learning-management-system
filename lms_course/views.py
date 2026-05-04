@@ -1,4 +1,3 @@
-
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
@@ -33,11 +32,17 @@ class CourseViewSet(viewsets.ModelViewSet):
     search_fields = ["title", "description"]
 
     def get_queryset(self):
-        return (
-            Course.objects.select_related("creator")
-            .prefetch_related("enrollments", "topics")
-            .all()
-        )
+        user = self.request.user
+
+        if user.role == 'mentor':
+            return Course.objects.filter(creator=user)
+        
+        return Course.objects.all()
+        # return (
+        #     Course.objects.select_related("creator")
+        #     .prefetch_related("enrollments", "topics")
+        #     .all()
+        # )
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -105,11 +110,7 @@ class TopicViewSet(viewsets.ModelViewSet):
         if _is_active_mentor(user):
             return qs.filter(course__creator=user)
 
-        # Students see topics of enrolled courses
-        enrolled_course_ids = Enrollment.objects.filter(user=user).values_list(
-            "course_id", flat=True
-        )
-        return qs.filter(course_id__in=enrolled_course_ids)
+        return qs.none()
 
     def get_serializer_class(self):
         if self.request.method in ("GET",):
@@ -117,7 +118,6 @@ class TopicViewSet(viewsets.ModelViewSet):
         return TopicSerializer
 
     def get_permissions(self):
-        print(f"----- {self.action} --------")
         if self.action in ("create", "update", "partial_update", "destroy"):
             return [IsAuthenticated(), IsActiveMentor(), IsCourseOwner()]
         return [IsAuthenticated()]
@@ -135,6 +135,34 @@ class TopicViewSet(viewsets.ModelViewSet):
         if topic.material and topic.material != old_material:
             topic.upload_status = UploadStatus.PENDING
             topic.save(update_fields=["upload_status"])
+            process_topic_material.delay(topic.pk)
+
+    
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="my-topics",
+        permission_classes=[IsAuthenticated],
+    )
+    def my_topics(self, request):
+        user = request.user
+        enrolled_course_ids = Enrollment.objects.filter(user=user).values_list(
+            "course_id", flat=True
+        )
+        qs = Topic.objects.select_related("course__creator").filter(
+            course_id__in=enrolled_course_ids
+        )
+        print(qs)
+        page = self.paginate_queryset(qs)
+        serializer = TopicReadSerializer(
+            page or qs, many=True, context={"request": request}
+        )
+        return (
+            self.get_paginated_response(serializer.data)
+            if page is not None
+            else Response(serializer.data)
+        )
+
 
 
 # ---------------------------------------------------------------------------
@@ -160,10 +188,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
         if _is_active_mentor(user):
             return qs.filter(topic__course__creator=user)
 
-        enrolled_course_ids = Enrollment.objects.filter(user=user).values_list(
-            "course_id", flat=True
-        )
-        return qs.filter(topic__course_id__in=enrolled_course_ids)
+        return qs.none()
 
     def get_serializer_class(self):
         return AssignmentSerializer
@@ -173,6 +198,30 @@ class AssignmentViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsActiveMentor(), IsCourseOwner()]
         return [IsAuthenticated()]
 
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="my-assignments",
+        permission_classes=[IsAuthenticated],
+    )
+    def my_assignments(self, request):
+        user = request.user
+        qs = (
+                Assignment.objects.select_related("topic__course")
+                .filter(topic__course__enrollments__user=user)
+                .exclude(submissions__student=user)
+                .distinct()
+            )
+
+        page = self.paginate_queryset(qs)
+        serializer = AssignmentSerializer(
+            page or qs, many=True, context={"request": request}
+        )
+        return (
+            self.get_paginated_response(serializer.data)
+            if page is not None
+            else Response(serializer.data)
+        )
 
 # ---------------------------------------------------------------------------
 # Submission
@@ -191,7 +240,6 @@ class SubmissionViewSet(
     - Students: create submission, view own submissions.
     - Mentors: view all submissions for their assignments, grade them.
     """
-
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["assignment", "student"]
 
@@ -206,7 +254,7 @@ class SubmissionViewSet(
             return qs.filter(assignment__topic__course__creator=user)
 
         # Students see only their own submissions
-        return qs.filter(student=user)
+        return qs.none()
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -250,6 +298,30 @@ class SubmissionViewSet(
             )
         return Response(serializer.data)
 
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="my-submissions",
+        permission_classes=[IsAuthenticated],
+    )
+    def my_submissions(self, request):
+        user = request.user
+        qs = Submission.objects.select_related(
+            "assignment__topic__course__creator", "student"
+        ).filter(
+            student=user,
+            assignment__topic__course__enrollments__user=user
+        ).distinct()
+
+        page = self.paginate_queryset(qs)
+        serializer = SubmissionDetailSerializer(
+            page or qs, many=True, context={"request": request}
+        )
+        return (
+            self.get_paginated_response(serializer.data)
+            if page is not None
+            else Response(serializer.data)
+        )
 
 # ---------------------------------------------------------------------------
 # Enrollment

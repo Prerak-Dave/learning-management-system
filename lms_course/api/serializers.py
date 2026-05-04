@@ -15,10 +15,11 @@ from lms_course.models import Assignment, Course, Enrollment, Submission, Topic
 
 class CourseListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for student course browsing (title + description)."""
+    creator_name = serializers.CharField(source='creator.username', read_only=True)
 
     class Meta:
         model = Course
-        fields = ["id", "title", "description", "start_date"]
+        fields = ["id", "title", "description", "start_date","creator_name"]
 
 
 class CourseDetailSerializer(serializers.ModelSerializer):
@@ -51,6 +52,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 
 
 class TopicSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Topic
         fields = [
@@ -62,7 +64,7 @@ class TopicSerializer(serializers.ModelSerializer):
             "upload_status",
             "created_at",
             ]
-        read_only_fields = ["upload_status", "created_at"]
+        read_only_fields = ["upload_status", "created_at", "course_title",]
 
     def validate_course(self, course):
         """Mentor may only add topics to their own courses."""
@@ -74,6 +76,7 @@ class TopicSerializer(serializers.ModelSerializer):
 
 class TopicReadSerializer(serializers.ModelSerializer):
     """Serializer used when reading topics (students)."""
+    course_title = serializers.CharField(source = 'course.title', read_only = True)
 
     class Meta:
         model = Topic
@@ -83,6 +86,7 @@ class TopicReadSerializer(serializers.ModelSerializer):
             "title",
             "material",
             "thumbnail",
+            "course_title",
             "upload_status",
         ]
         read_only = True
@@ -94,10 +98,21 @@ class TopicReadSerializer(serializers.ModelSerializer):
 
 
 class AssignmentSerializer(serializers.ModelSerializer):
+    topic_title = serializers.CharField(source="topic.title", read_only=True)
+    course_title = serializers.CharField(source="topic.course.title", read_only=True)
+
     class Meta:
         model = Assignment
-        fields = ["id", "topic", "title", "description", "created_at"]
-        read_only_fields = ["created_at"]
+        fields = [
+            "id",
+            "topic",
+            "title",
+            "description",
+            "created_at",
+            "topic_title",
+            "course_title",
+        ]
+        read_only_fields = ["created_at", "topic_title","course_title"]
 
     def validate_topic(self, topic):
         """Mentor may only manage assignments in topics they own."""
@@ -162,22 +177,37 @@ class SubmissionGradeSerializer(serializers.ModelSerializer):
 
 class SubmissionDetailSerializer(serializers.ModelSerializer):
     """Read-only detail view of a submission."""
-
     student_username = serializers.CharField(
         source="student.username", read_only=True
+    )
+    assignment_title = serializers.CharField(
+        source="assignment.title", read_only=True
+    )
+    assignment_description = serializers.CharField(
+        source="assignment.description", read_only=True
+    )
+    topic_title = serializers.CharField(
+        source="assignment.topic.title", read_only=True
+    )
+    course_title = serializers.CharField(
+        source="assignment.topic.course.title", read_only=True
     )
 
     class Meta:
         model = Submission
         fields = [
-        "id",
-        "assignment",
-        "student",
-        "student_username",
-        "file",
-        "marks",
-        "submitted_at",
-        "graded_at",
+            "id",
+            "assignment",
+            "assignment_title",
+            "assignment_description",
+            "topic_title",
+            "course_title",
+            "student",
+            "student_username",
+            "file",
+            "marks",
+            "submitted_at",
+            "graded_at",
         ]
 
 
@@ -187,10 +217,11 @@ class SubmissionDetailSerializer(serializers.ModelSerializer):
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
+    course_title = serializers.CharField(source = 'course.title', read_only = True)
     class Meta:
         model = Enrollment
-        fields = ["id", "user", "course", "enrolled_at"]
-        read_only_fields = ["user", "enrolled_at"]
+        fields = ["id", "user", "course", "enrolled_at", "course_title"]
+        read_only_fields = ["user", "enrolled_at", "course_title"]
 
     def validate_course(self, course):
         request = self.context["request"]
